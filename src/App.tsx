@@ -13,15 +13,22 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <Router>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-      </Routes>
-      <Toaster position="top-right" />
-    </Router>
-  </QueryClientProvider>
-);
+const App = () => {
+  console.log("App component loaded");
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <div className="min-h-screen">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="*" element={<Dashboard />} />
+          </Routes>
+        </div>
+        <Toaster position="top-right" />
+      </Router>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
