@@ -24,6 +24,10 @@ const App = () => {
       hostname: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
       pathname: typeof window !== 'undefined' ? window.location.pathname : 'unknown'
     });
+    
+    // Aplicar tema escuro
+    document.documentElement.classList.add('dark');
+    
     setIsReady(true);
   }, []);
 
@@ -37,10 +41,10 @@ const App = () => {
 
   if (!isReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando Dashboard ASPERUS...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Carregando Dashboard ASPERUS...</p>
         </div>
       </div>
     );
@@ -49,13 +53,13 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <RouterComponent>
-        <div className="min-h-screen">
+        <div className="min-h-screen dark">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="*" element={<Dashboard />} />
           </Routes>
         </div>
-        <Toaster position="top-right" />
+        <Toaster position="top-right" theme="dark" />
       </RouterComponent>
     </QueryClientProvider>
   );
