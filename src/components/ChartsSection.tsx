@@ -2,36 +2,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar, ResponsiveContainer } from "recharts";
-
-// Dados para o gráfico de distribuição por status
-const statusData = [
-  { name: 'AGENDADO', value: 5, color: '#22c55e' },
-  { name: 'CANCELADO', value: 1, color: '#ef4444' },
-  { name: 'REAGENDADO', value: 1, color: '#f59e0b' }
-];
-
-// Dados para o gráfico de agendamentos por horário
-const horarioData = [
-  { time: '08:00', agendamentos: 0 },
-  { time: '09:00', agendamentos: 2 },
-  { time: '10:00', agendamentos: 1 },
-  { time: '11:00', agendamentos: 2 },
-  { time: '12:00', agendamentos: 0 },
-  { time: '13:00', agendamentos: 0 },
-  { time: '14:00', agendamentos: 0 },
-  { time: '15:00', agendamentos: 1 },
-  { time: '16:00', agendamentos: 0 },
-  { time: '17:00', agendamentos: 0 },
-  { time: '18:00', agendamentos: 1 },
-  { time: '19:00', agendamentos: 0 },
-  { time: '20:00', agendamentos: 0 }
-];
-
-// Dados para performance por profissional
-const performanceData = [
-  { name: 'Alan Marques', agendamentos: 4, color: '#3b82f6' },
-  { name: 'Gil Pedrosa', agendamentos: 3, color: '#f59e0b' }
-];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const chartConfig = {
   agendamentos: {
@@ -48,13 +20,101 @@ const chartConfig = {
   },
 };
 
+// Hook para buscar dados dos gráficos
+const useChartData = () => {
+  return useQuery({
+    queryKey: ['chart-data'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('agendamentos_robustos')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching chart data:', error);
+        throw error;
+      }
+
+      // Dados para distribuição por status
+      const statusCounts = data?.reduce((acc: any, item) => {
+        acc[item.STATUS] = (acc[item.STATUS] || 0) + 1;
+        return acc;
+      }, {}) || {};
+
+      const statusData = [
+        { name: 'AGENDADO', value: statusCounts.AGENDADO || 0, color: '#22c55e' },
+        { name: 'CANCELADO', value: statusCounts.CANCELADO || 0, color: '#ef4444' },
+        { name: 'REAGENDADO', value: statusCounts.REAGENDADO || 0, color: '#f59e0b' }
+      ];
+
+      // Dados para agendamentos por horário
+      const horarioCounts = data?.reduce((acc: any, item) => {
+        const hora = item.HORA.substring(0, 5); // Remove seconds
+        acc[hora] = (acc[hora] || 0) + 1;
+        return acc;
+      }, {}) || {};
+
+      const horarioData = [];
+      for (let hour = 8; hour <= 20; hour++) {
+        const timeKey = `${hour.toString().padStart(2, '0')}:00`;
+        horarioData.push({
+          time: timeKey,
+          agendamentos: horarioCounts[timeKey] || 0
+        });
+      }
+
+      // Dados para performance por profissional
+      const profissionalCounts = data?.reduce((acc: any, item) => {
+        acc[item.PROFISSIONAL] = (acc[item.PROFISSIONAL] || 0) + 1;
+        return acc;
+      }, {}) || {};
+
+      const performanceData = Object.entries(profissionalCounts).map(([name, count], index) => ({
+        name,
+        agendamentos: count,
+        color: index === 0 ? '#3b82f6' : '#f59e0b'
+      }));
+
+      return { statusData, horarioData, performanceData };
+    },
+  });
+};
+
+// Componente customizado para barra com animação
+const AnimatedBar = (props: any) => {
+  return (
+    <Bar 
+      {...props}
+      className="transition-all duration-500 hover:scale-y-110 origin-bottom"
+      style={{ transformOrigin: 'bottom' }}
+    />
+  );
+};
+
 export const ChartsSection = () => {
+  const { data: chartData, isLoading } = useChartData();
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="bg-card border-border">
+            <CardContent className="p-6">
+              <div className="h-[300px] flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Gráfico de Distribuição por Status */}
       <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-foreground">
+          <CardTitle className="text-lg font-semibold text-card-foreground">
             Distribuição por Status
           </CardTitle>
         </CardHeader>
@@ -63,7 +123,7 @@ export const ChartsSection = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={statusData}
+                  data={chartData?.statusData || []}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -71,7 +131,7 @@ export const ChartsSection = () => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {statusData.map((entry, index) => (
+                  {chartData?.statusData?.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -80,7 +140,7 @@ export const ChartsSection = () => {
             </ResponsiveContainer>
           </ChartContainer>
           <div className="flex justify-center mt-4 space-x-4">
-            {statusData.map((item, index) => (
+            {chartData?.statusData?.map((item, index) => (
               <div key={index} className="flex items-center space-x-2">
                 <div 
                   className="w-3 h-3 rounded-full" 
@@ -96,14 +156,14 @@ export const ChartsSection = () => {
       {/* Gráfico de Agendamentos por Horário */}
       <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-foreground">
+          <CardTitle className="text-lg font-semibold text-card-foreground">
             Agendamentos por Horário
           </CardTitle>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={horarioData}>
+              <LineChart data={chartData?.horarioData || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="time" 
@@ -131,14 +191,14 @@ export const ChartsSection = () => {
       {/* Gráfico de Performance por Profissional - Ocupa toda a largura */}
       <Card className="bg-card border-border lg:col-span-2">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-foreground">
+          <CardTitle className="text-lg font-semibold text-card-foreground">
             Performance por Profissional
           </CardTitle>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={performanceData}>
+              <BarChart data={chartData?.performanceData || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="name" 
@@ -149,14 +209,14 @@ export const ChartsSection = () => {
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                 />
-                <Bar 
+                <AnimatedBar 
                   dataKey="agendamentos" 
                   radius={[4, 4, 0, 0]}
                 >
-                  {performanceData.map((entry, index) => (
+                  {chartData?.performanceData?.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
-                </Bar>
+                </AnimatedBar>
                 <ChartTooltip content={<ChartTooltipContent />} />
               </BarChart>
             </ResponsiveContainer>
