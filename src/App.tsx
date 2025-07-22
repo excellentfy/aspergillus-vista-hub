@@ -31,7 +31,7 @@ const App = () => {
   const isVercel = typeof window !== 'undefined' && 
     (window.location.hostname.includes('vercel.app') || 
      window.location.hostname.includes('vercel.com') ||
-     process.env.VERCEL === '1');
+     window.location.hostname.includes('lovableproject.com'));
 
   const RouterComponent = isVercel ? BrowserRouter : Router;
 
