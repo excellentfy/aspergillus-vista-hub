@@ -17,7 +17,6 @@ export const useAgendamentos = (dataFilter?: string) => {
   return useQuery({
     queryKey: ['agendamentos', dataFilter],
     queryFn: async () => {
-      console.log('Buscando agendamentos...');
       let query = supabase
         .from('agendamentos_robustos')
         .select('*')
@@ -35,7 +34,6 @@ export const useAgendamentos = (dataFilter?: string) => {
         throw error;
       }
 
-      console.log('Dados recebidos:', data);
       return data as Agendamento[];
     },
   });
@@ -43,7 +41,6 @@ export const useAgendamentos = (dataFilter?: string) => {
 
 export const useAgendamentosHoje = () => {
   const hoje = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-  console.log('Data de hoje para filtro:', hoje);
   return useAgendamentos(hoje);
 };
 
@@ -51,7 +48,6 @@ export const useAgendamentosStats = () => {
   return useQuery({
     queryKey: ['agendamentos-stats'],
     queryFn: async () => {
-      console.log('Buscando estatísticas...');
       const { data, error } = await supabase
         .from('agendamentos_robustos')
         .select('*');
@@ -60,8 +56,6 @@ export const useAgendamentosStats = () => {
         console.error('Error fetching agendamentos stats:', error);
         throw error;
       }
-
-      console.log('Dados para estatísticas:', data);
 
       const hoje = new Date().toISOString().split('T')[0];
       const agendamentosHoje = data?.filter(a => a.DATA === hoje) || [];

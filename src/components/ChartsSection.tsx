@@ -25,7 +25,6 @@ const useChartData = () => {
   return useQuery({
     queryKey: ['chart-data'],
     queryFn: async () => {
-      console.log('Buscando dados para gráficos...');
       const { data, error } = await supabase
         .from('agendamentos_robustos')
         .select('*');
@@ -34,8 +33,6 @@ const useChartData = () => {
         console.error('Error fetching chart data:', error);
         throw error;
       }
-
-      console.log('Dados dos gráficos:', data);
 
       // Dados para distribuição por status
       const statusCounts = data?.reduce((acc: any, item) => {
@@ -80,10 +77,6 @@ const useChartData = () => {
         agendamentos: count,
         color: index === 0 ? '#3b82f6' : '#f59e0b'
       }));
-
-      console.log('Status data:', statusData);
-      console.log('Horario data:', horarioData);
-      console.log('Performance data:', performanceData);
 
       return { statusData, horarioData, performanceData };
     },
