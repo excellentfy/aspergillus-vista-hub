@@ -25,6 +25,7 @@ const useChartData = () => {
   return useQuery({
     queryKey: ['chart-data'],
     queryFn: async () => {
+      console.log('Buscando dados para gráficos...');
       const { data, error } = await supabase
         .from('agendamentos_robustos')
         .select('*');
@@ -33,6 +34,8 @@ const useChartData = () => {
         console.error('Error fetching chart data:', error);
         throw error;
       }
+
+      console.log('Dados dos gráficos:', data);
 
       // Dados para distribuição por status
       const statusCounts = data?.reduce((acc: any, item) => {
@@ -46,10 +49,12 @@ const useChartData = () => {
         { name: 'REAGENDADO', value: statusCounts.REAGENDADO || 0, color: '#f59e0b' }
       ];
 
-      // Dados para agendamentos por horário
+      // Dados para agendamentos por horário - ajustando para o formato de hora correto
       const horarioCounts = data?.reduce((acc: any, item) => {
-        const hora = item.HORA.substring(0, 5); // Remove seconds
-        acc[hora] = (acc[hora] || 0) + 1;
+        const hora = item.HORA ? item.HORA.toString().substring(0, 5) : ''; // Remove seconds if present
+        if (hora) {
+          acc[hora] = (acc[hora] || 0) + 1;
+        }
         return acc;
       }, {}) || {};
 
@@ -64,7 +69,9 @@ const useChartData = () => {
 
       // Dados para performance por profissional
       const profissionalCounts = data?.reduce((acc: any, item) => {
-        acc[item.PROFISSIONAL] = (acc[item.PROFISSIONAL] || 0) + 1;
+        if (item.PROFISSIONAL) {
+          acc[item.PROFISSIONAL] = (acc[item.PROFISSIONAL] || 0) + 1;
+        }
         return acc;
       }, {}) || {};
 
@@ -73,6 +80,10 @@ const useChartData = () => {
         agendamentos: count,
         color: index === 0 ? '#3b82f6' : '#f59e0b'
       }));
+
+      console.log('Status data:', statusData);
+      console.log('Horario data:', horarioData);
+      console.log('Performance data:', performanceData);
 
       return { statusData, horarioData, performanceData };
     },
@@ -188,17 +199,20 @@ export const ChartsSection = () => {
         </CardContent>
       </Card>
 
-      {/* Gráfico de Performance por Profissional - Ocupa toda a largura */}
-      <Card className="bg-card border-border lg:col-span-2">
+      {/* Gráfico de Performance por Profissional - Ocupa toda a largura e centralizado */}
+      <Card className="bg-card border-border col-span-1 lg:col-span-2">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-card-foreground">
+          <CardTitle className="text-lg font-semibold text-card-foreground text-center">
             Performance por Profissional
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ChartContainer config={chartConfig} className="h-[300px]">
+        <CardContent className="flex justify-center">
+          <ChartContainer config={chartConfig} className="h-[300px] w-full max-w-4xl">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData?.performanceData || []}>
+              <BarChart 
+                data={chartData?.performanceData || []} 
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="name" 
