@@ -21,8 +21,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     
+    <!-- Preload critical resources -->
+    <link rel="modulepreload" href="./src/main.tsx" />
+    
     <script>
-      console.log("HTML loaded");
+      console.log("HTML loaded on:", window.location.href);
+      console.log("Environment detection:", {
+        isVercel: window.location.hostname.includes('vercel'),
+        isGitHubPages: window.location.hostname.includes('github.io'),
+        hostname: window.location.hostname
+      });
     </script>
   </head>
 
@@ -31,6 +39,25 @@
     <script type="module" src="./src/main.tsx"></script>
     <script>
       console.log("Body loaded, root element:", document.getElementById("root"));
+      
+      // Fallback para casos onde o React não carrega
+      setTimeout(() => {
+        const root = document.getElementById("root");
+        if (root && root.innerHTML.trim() === '') {
+          console.error("React app não carregou após 5 segundos");
+          root.innerHTML = `
+            <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: system-ui, sans-serif;">
+              <div style="text-align: center; padding: 2rem;">
+                <h1 style="color: #dc2626; margin-bottom: 1rem;">Erro ao carregar a aplicação</h1>
+                <p style="color: #6b7280;">Por favor, recarregue a página ou verifique o console para mais detalhes.</p>
+                <button onclick="window.location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 0.375rem; cursor: pointer;">
+                  Recarregar Página
+                </button>
+              </div>
+            </div>
+          `;
+        }
+      }, 5000);
     </script>
   </body>
 </html>
